@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<link rel="stylesheet" href="../jquery-easyui/themes/metro/easyui.css"/>
+<link rel="stylesheet" href="../jquery-easyui/themes/icon.css"/>
+<script type="text/javascript" src="../jquery-easyui/jquery.min.js"></script>
+<script type="text/javascript" src="../jquery-easyui/jquery.easyui.min.js"></script>
+<script type="text/javascript" src="../jquery-easyui/locale/easyui-lang-zh_CN.js"></script>
+</head>
+<body>
+<table id="codePwdList"></table>
+	<div id="editCodePwdDialog">
+		<form id="editCodePwdForm" style="width:100%">
+			<input type="hidden" name="cpId" id="cpId"/>
+			<table style="width:100%">
+				<tr>
+					<td>源码编码：<input id="codeNum" name="codeNum" class="easyui-validatebox" data-options="required:true"></td>
+					<td>源码密码：<input id=codePwd name="codePwd" class="easyui-validatebox" data-options="required:true"></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<script type="text/javascript">
+	var opt = "";
+	$('#codePwdList').datagrid({
+	    url:'../codePwd/getCodePwdList.do',
+	    columns:[[
+	    	{field:'cpId',checkbox:true,width:100},
+			{field:'codeNum',title:'源码编码',width:100},
+			{field:'codePwd',title:'源码密码',width:100}
+	    ]],
+	    
+	    toolbar: [{
+			iconCls: 'icon-add',
+			text: '新增源码',
+			handler: function(){
+				
+				opt = "save";
+				
+				$('#editCodeForm').form('reset');
+				
+				$('#editCodeDialog').dialog('open');
+				
+				//将表单修改为异步表单
+				$('#editCodeForm').form({
+				    url: opt=="save"?'../codePwd/saveCodePwd.do':'../codePwd/updateCodePwd.do',
+				    onSubmit: function(){
+						return $('#editCodeForm').form('validate');
+				    },
+				    success:function(data){
+						
+				    	var jsonData = $.parseJSON(data);
+				    	
+				    	if(jsonData.code==200){
+				    		
+				    		$('#editCodePwdDialog').dialog('close');
+				    		
+				    		//刷新表格数据
+				    		$('#codePwdList').datagrid('reload');
+				    		
+				    		$.messager.show({
+				    			title:'提示信息',
+				    			msg:jsonData.msg,
+				    			timeout:2000,
+				    			showType:'slide'
+				    		});
+				    		
+				    	}else{
+				    		
+				    		$.messager.alert('警告信息',jsonData.msg,'warning');
+				    	}
+				    }
+				});
+			}
+		},'-',{
+			iconCls: 'icon-edit',
+			text: '修改源码',
+			handler: function(){
+				
+				opt = "update";
+				
+				//当前选中的行
+				var selectRow = $('#codeList').datagrid('getSelections');
+				
+				if(selectRow.length!=1){
+					
+					$.messager.alert('提示信息','请选中一行数据','info');
+					
+				}else{
+					console.info(selectRow[0]);
+					$('#editCodePwdDialog').dialog('open');
+						
+					$('#codeNum').val(selectRow[0].codeNum);
+
+					$('#codePwd').val(selectRow[0].codePwd);
+					$('#cpId').val(selectRow[0].cpId);
+									
+					//将表单修改为异步表单
+					$('#editCodePwdForm').form({
+					    url: opt=="save"?'../codePwd/saveCodePwd.do':'../codePwd/updateCodePwd.do',
+					    onSubmit: function(){
+							return $('#editCodePwdForm').form('validate');
+					    },
+					    success:function(data){
+					    	
+					    	console.info(data);
+							
+					    	var jsonData = $.parseJSON(data);
+					    	
+					    	if(jsonData.code==200){
+					    		
+					    		$('#editCodePwdDialog').dialog('close');
+					    		
+					    		//刷新表格数据
+					    		$('#codePwdList').datagrid('reload');
+					    		
+					    		$.messager.show({
+					    			title:'提示信息',
+					    			msg:jsonData.msg,
+					    			timeout:2000,
+					    			showType:'slide'
+					    		});
+					    		
+					    	}else{
+					    		
+					    		$.messager.alert('警告信息',jsonData.msg,'warning');
+					    	}
+					    }
+					});
+					
+				}
+			}
+		},'-',{
+			iconCls: 'icon-remove',
+			text: '删除源码',
+			handler: function(){
+				var selectRow = $('#codePwdList').datagrid('getSelections');
+				
+				if(selectRow.length==0){
+					
+					$.messager.alert('警告信息','至少选中一个用户','warning');
+				}else{
+					
+					var cIds = new Array();
+					
+					for(var i = 0;i<selectRow.length;i++){
+						
+						cIds.push(selectRow[i].cId);
+					}
+					
+					$.post('../codePwd/deleteCodePwd.do',{cIds:cIds},function(data){
+						
+						$('#codePwdList').datagrid('reload');
+						
+						$.messager.show({
+			    			title:'提示信息',
+			    			msg:data.msg,
+			    			timeout:2000,
+			    			showType:'slide'
+			    		});
+					},'json');
+				}
+				
+			}}
+		],
+		
+	    fitColumns: true
+	});
+	
+	//弹出框
+	$('#editCodePwdDialog').dialog({
+	    title: '新增源码',
+	    width: 600,
+	    height: 400,
+	    closed: true,
+	    modal: true,
+	    buttons:[{
+	    	iconCls: 'icon-save',
+			text:'保存',
+			handler:function(){
+				
+				$('#editCodePwdForm').submit();
+			}
+		},{
+			iconCls: 'icon-cancel',
+			text:'关闭',
+			handler:function(){
+				
+				$('#editCodePwdDialog').dialog('close');
+			}
+		}]
+	});
+
+</script>
+
+</body>
+</html>

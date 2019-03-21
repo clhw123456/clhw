@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<link rel="stylesheet" href="../jquery-easyui/themes/metro/easyui.css"/>
+<link rel="stylesheet" href="../jquery-easyui/themes/icon.css"/>
+<script type="text/javascript" src="../jquery-easyui/jquery.min.js"></script>
+<script type="text/javascript" src="../jquery-easyui/jquery.easyui.min.js"></script>
+<script type="text/javascript" src="../jquery-easyui/locale/easyui-lang-zh_CN.js"></script>
+</head>
+<body>
+	<table id="codeList"></table>
+	<div id="editCodeDialog">
+		<form id="editCodeForm" style="width:100%">
+			<input type="hidden" name="cId" id="cId"/>
+			<table style="width:100%">
+				<tr>
+					<td>源码名称：<input id="cName" name="cName" class="easyui-validatebox" data-options="required:true"></td>
+					<td>源码编码：<input id="cNum" name="cNum" class="easyui-validatebox" data-options="required:true"></td>
+				</tr>
+				<tr>
+					<td>源码类型：<input id="typeDict" name="typeDict.dId" ></td>
+					<td>源码行业：<input id="tradeDict" name="tradeDict.dId" ></td>
+				</tr>
+				<tr>
+					<td>源码等级：<input id="levelDict" name="levelDict.dId" ></td>
+					<td>源码价格：<input id="cPrice" class="easyui-textbox"  name="cPrice"   readonly="readonly"></td>
+				</tr> 
+				<tr>
+					<td colspan="2">下载地址：<textarea id="downLoad" name="downLoad" rows="10" cols="50"></textarea></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<script type="text/javascript">
+	
+		$('#typeDict').combobox({
+			
+			valueField:'dId',
+			textField:'dValue',
+			url:'../code/getTypeDictList.do',
+			onLoadSuccess: function(){
+				
+				$('#tradeDict').combobox({
+					
+					valueField:'dId',
+					textField:'dValue',
+					url:'../code/getTradeDictList.do',
+					onLoadSuccess: function(){
+						
+						$('#levelDict').combobox({
+							
+							valueField:'dId',
+							textField:'dName',
+							url:'../code/getLevelDictList.do'
+						});
+					}
+				});
+				
+			}
+		});
+	
+		var opt = "";
+		$('#codeList').datagrid({
+		    url:'../code/getCodeList.do',
+		    columns:[[
+		    	{field:'cId',checkbox:true,width:100},
+				{field:'cName',title:'源码名称',width:100},
+				{field:'cNum',title:'源码编码',width:100},
+				{field:'typeDict',title:'源码类型',width:100,formatter: function(value,rowData,rowIndex){
+					
+					return value.dValue;
+				}},
+				{field:'tradeDict',title:'源码行业',width:100,formatter: function(value,rowData,rowIndex){
+					
+					return value.dValue;
+				}},
+				{field:'levelDict',title:'源码等级',width:100,formatter: function(value,rowData,rowIndex){
+					
+					return value.dName;
+				}},
+				{field:'cPrice',title:'源码价格',width:100} 
+		    ]],
+		    
+		    toolbar: [{
+				iconCls: 'icon-add',
+				text: '新增源码',
+				handler: function(){
+					
+					opt = "save";
+					
+					$('#editCodeForm').form('reset');
+					
+					$('#editCodeDialog').dialog('open');
+					
+					//将表单修改为异步表单
+					$('#editCodeForm').form({
+					    url: opt=="save"?'../code/saveCode.do':'../code/updateCode.do',
+					    onSubmit: function(){
+							return $('#editCodeForm').form('validate');
+					    },
+					    success:function(data){
+							
+					    	var jsonData = $.parseJSON(data);
+					    	
+					    	if(jsonData.code==200){
+					    		
+					    		$('#editCodeDialog').dialog('close');
+					    		
+					    		//刷新表格数据
+					    		$('#codeList').datagrid('reload');
+					    		
+					    		$.messager.show({
+					    			title:'提示信息',
+					    			msg:jsonData.msg,
+					    			timeout:2000,
+					    			showType:'slide'
+					    		});
+					    		
+					    	}else{
+					    		
+					    		$.messager.alert('警告信息',jsonData.msg,'warning');
+					    	}
+					    }
+					});
+				}
+			},'-',{
+				iconCls: 'icon-edit',
+				text: '修改源码',
+				handler: function(){
+					
+					opt = "update";
+					
+					//当前选中的行
+					var selectRow = $('#codeList').datagrid('getSelections');
+					
+					if(selectRow.length!=1){
+						
+						$.messager.alert('提示信息','请选中一行数据','info');
+						
+					}else{
+						console.info(selectRow[0]);
+						$('#editCodeDialog').dialog('open');
+						
+						$('#cName').val(selectRow[0].cName);
+						
+						$('#cNum').val(selectRow[0].cNum);
+
+						$('#typeDict').combobox('setValue',selectRow[0].typeDict.dId);
+						$('#tradeDict').combobox('setValue',selectRow[0].tradeDict.dId);
+						$('#levelDict').combobox('setValue',selectRow[0].levelDict.dId);
+						$('#cPrice').val(selectRow[0].cPrice);
+						$('#downLoad').val(selectRow[0].downLoad);
+						$('#cId').val(selectRow[0].cId);
+										
+						//将表单修改为异步表单
+						$('#editCodeForm').form({
+						    url: opt=="save"?'../code/saveCode.do':'../code/updateCode.do',
+						    onSubmit: function(){
+								return $('#editCodeForm').form('validate');
+						    },
+						    success:function(data){
+						    	
+						    	console.info(data);
+								
+						    	var jsonData = $.parseJSON(data);
+						    	
+						    	if(jsonData.code==200){
+						    		
+						    		$('#editCodeDialog').dialog('close');
+						    		
+						    		//刷新表格数据
+						    		$('#codeList').datagrid('reload');
+						    		
+						    		$.messager.show({
+						    			title:'提示信息',
+						    			msg:jsonData.msg,
+						    			timeout:2000,
+						    			showType:'slide'
+						    		});
+						    		
+						    	}else{
+						    		
+						    		$.messager.alert('警告信息',jsonData.msg,'warning');
+						    	}
+						    }
+						});
+						
+					}
+				}
+			},'-',{
+				iconCls: 'icon-remove',
+				text: '删除源码',
+				handler: function(){
+					var selectRow = $('#codeList').datagrid('getSelections');
+					
+					if(selectRow.length==0){
+						
+						$.messager.alert('警告信息','至少选中一个用户','warning');
+					}else{
+						
+						var cIds = new Array();
+						
+						for(var i = 0;i<selectRow.length;i++){
+							
+							cIds.push(selectRow[i].cId);
+						}
+						
+						$.post('../code/deleteCode.do',{cIds:cIds},function(data){
+							
+							$('#codeList').datagrid('reload');
+							
+							$.messager.show({
+				    			title:'提示信息',
+				    			msg:data.msg,
+				    			timeout:2000,
+				    			showType:'slide'
+				    		});
+						},'json');
+					}
+					
+				}}
+			],
+			
+		    fitColumns: true
+		});
+		
+		//弹出框
+		$('#editCodeDialog').dialog({
+		    title: '新增源码',
+		    width: 600,
+		    height: 400,
+		    closed: true,
+		    modal: true,
+		    buttons:[{
+		    	iconCls: 'icon-save',
+				text:'保存',
+				handler:function(){
+					
+					$('#editCodeForm').submit();
+				}
+			},{
+				iconCls: 'icon-cancel',
+				text:'关闭',
+				handler:function(){
+					
+					$('#editCodeDialog').dialog('close');
+				}
+			}]
+		});
+		
+		$('#levelDict').combobox({
+			
+			onSelect: function(record){
+				
+				$('#cPrice').val(record.dValue);
+			}
+		});
+	</script>
+</body>
+</html>

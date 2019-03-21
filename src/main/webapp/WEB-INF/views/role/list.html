@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<link rel="stylesheet" href="../jquery-easyui/themes/metro/easyui.css"/>
+<link rel="stylesheet" href="../jquery-easyui/themes/icon.css"/>
+<script type="text/javascript" src="../jquery-easyui/jquery.min.js"></script>
+<script type="text/javascript" src="../jquery-easyui/jquery.easyui.min.js"></script>
+<script type="text/javascript" src="../jquery-easyui/locale/easyui-lang-zh_CN.js"></script>
+</head>
+<body>
+	<div class="easyui-layout" style="width:100%;height:100%">
+		<div data-options="region:'west',title:'角色列表',split:true" style="width:250px;">
+	    	<table id="roleList"></table>
+	    </div>
+	    <div data-options="region:'center'">
+	    	<ul id="privilegesTree"></ul>
+	    	
+	    	<a id="updatePrivilege" onclick="updatePrivilege()" href="javascript:void(0);" class="easyui-linkbutton" data-options="iconCls:'icon-save'">保存权限</a>
+	    </div>
+	</div>
+
+<script type="text/javascript">
+	
+		var selectRowData = {};
+		$('#roleList').datagrid({
+		    url:'getRoleList.do',
+		    columns:[[
+				{field:'rName',title:'角色名称',width:240}
+		    ]],
+		    singleSelect: true,
+		    onClickRow: function(rowIndex, rowData){
+		    	
+		    	selectRowData = rowData;
+		    	
+		    	$.post('../role/getPrivilegesByRId.do',{rId: rowData.rId},function(data){
+		    		
+		    		$('#privilegesTree').tree({
+		    			
+		    			data: data,
+		    			checkbox: true
+		    			
+		    		});
+		    		
+		    	},'json');
+		    }
+		});
+		
+		function updatePrivilege(){
+			
+			var rId = selectRowData.rId;
+			
+			var checkedPrivileges = $('#privilegesTree').tree('getChecked');
+			
+			var checkedPrivilegesArray = new Array();
+			
+			for(var i=0;i<checkedPrivileges.length;i++){
+				
+				checkedPrivilegesArray.push(checkedPrivileges[i].id);
+			}
+			
+			$.post('../role/updatePrivilegesByRId.do',{rId:rId,checkedPrivilegesArray: checkedPrivilegesArray}, function(data){
+				
+				if(data.code==200){
+					
+					$.messager.show({
+						title:'提示信息',
+						msg:data.msg,
+						timeout:2000,
+						showType:'slide'
+					});
+				}else{
+					
+					$.messager.alert('警告信息',data.msg,'warning');
+				}
+			},'json');
+		}
+		
+		//弹出框
+		/* $('#editUserDialog').dialog({
+		    title: '新增管理员',
+		    width: 600,
+		    height: 400,
+		    closed: true,
+		    modal: true,
+		    buttons:[{
+		    	iconCls: 'icon-save',
+				text:'保存',
+				handler:function(){
+					
+					$('#editUserForm').submit();
+				}
+			},{
+				iconCls: 'icon-cancel',
+				text:'关闭',
+				handler:function(){
+					
+					$('#editUserDialog').dialog('close');
+				}
+			}]
+		});
+		
+		$('#rId').combobox({
+			valueField:'rId',
+			textField:'rName',
+			url:'getRoleList.do'
+		}); */
+	</script>
+</body>
+</html>

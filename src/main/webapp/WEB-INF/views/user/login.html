@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<link rel="stylesheet" href="../jquery-easyui/themes/metro/easyui.css"/>
+<link rel="stylesheet" href="../jquery-easyui/themes/icon.css"/>
+<script type="text/javascript" src="../jquery-easyui/jquery.min.js"></script>
+<script type="text/javascript" src="../jquery-easyui/jquery.easyui.min.js"></script>
+<script type="text/javascript" src="../jquery-easyui/locale/easyui-lang-zh_CN.js"></script>
+<script type="text/javascript" src="../js/login.js"></script>
+</head>
+<body>
+	<div class="easyui-panel" data-options="title:'登录表单',width:500">
+		<form id="loginForm" method="post">
+		    <div>
+				<label for="UName">用户名:</label>
+				<input class="easyui-validatebox" type="text" id="UName" name="UName" data-options="required:true,missingMessage:'请输入用户名'" />
+		    </div>
+		    <div>
+				<label for="UPwd">密码:</label>
+				<input class="easyui-validatebox" type="password" id="UPwd" name="UPwd" data-options="required:true,missingMessage:'请输入密码',validType:'length[6,12]'" />
+		    </div>
+		    <a class="easyui-linkbutton" onclick="loginFormSubmit()">登录</a>
+		</form>
+	</div>
+	
+	<div id="loginProgress"></div>
+	<script type="text/javascript">
+	/* 倒计时初始值 */
+		var progressBarVal = 99;
+	
+		function loginFormSubmit(){
+			
+			$('#loginForm').form('submit', {
+			    url:'login.do',
+			    onSubmit: function(){
+					return $('#loginForm').form('validate');
+			    },
+			    success:function(data){
+					
+			    	var jsonData = $.parseJSON(data);
+			    	
+			    	if(jsonData.code==200){
+			    		
+			    		$('#loginProgress').progressbar({
+				    	    value: progressBarVal,
+				    	    
+				    	    onChange: function(value){
+				    			if(value==100){
+				    				
+				    				location.href = "toIndexUI.do";
+				    			}
+				    		}
+				    	});
+				    	
+				    	setInterval(function(){
+				    		
+				    		$('#loginProgress').progressbar('setValue',progressBarVal+=1);
+							
+						}, 30);
+				    	
+				    	//在登录过程中加载用户的菜单列表
+				    	$.post('loadPrivilegesByUId.do',{},function(data){
+				    		
+				    		
+				    	},'json');
+			    		
+			    	}else{
+			    		
+			    		$.messager.alert('提示信息',jsonData.msg,'info');
+			    	}
+			    	
+			    }
+			});
+		}
+	</script>
+	
+	<!--  -->
+</body>
+</html>

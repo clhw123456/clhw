@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<link rel="stylesheet" href="../jquery-easyui/themes/metro/easyui.css"/>
+<link rel="stylesheet" href="../jquery-easyui/themes/icon.css"/>
+<script type="text/javascript" src="../jquery-easyui/jquery.min.js"></script>
+<script type="text/javascript" src="../jquery-easyui/jquery.easyui.min.js"></script>
+<script type="text/javascript" src="../jquery-easyui/locale/easyui-lang-zh_CN.js"></script>
+</head>
+<body>
+	<table id="userList"></table>
+	<div id="editUserDialog">
+		<form id="editUserForm">
+		
+			<input type="hidden" name="uId" id="uId"/>
+			用户名：  <input id="uname" name="uName" class="easyui-validatebox" data-options="required:true">
+			<br/>
+			角色：<input id="rId" name="role.rId" data-options="required: true"/><br/>
+			状态：<input type="radio" name="status" value="1" checked="checked" id="enable"><label for="enable">启用</label>
+			<input type="radio" name="status" value="0" id="disable"><label for="disable">禁用</label>
+		</form>
+	</div>
+	<script type="text/javascript">
+	
+		var opt = "";
+		$('#userList').datagrid({
+		    url:'getUserList.do',
+		    columns:[[
+		    	{field:'uId',checkbox:true,width:100},
+				{field:'uName',title:'用户名',width:100},
+				{field:'role',title:'所属角色',width:100,formatter: function(value,rowData,rowIndex){
+				
+					return value.rName;
+				}},
+				{field:'status',title:'账号状态',width:100,formatter: function(value,rowData,rowIndex){
+					
+					return value==1?'启用':'禁用';
+				}}
+		    ]],
+		    
+		    toolbar: [{
+				iconCls: 'icon-add',
+				text: '新增管理员',
+				handler: function(){
+					
+					opt = "save";
+					
+					$('#editUserForm').form('reset');
+					
+					$('#editUserDialog').dialog('open');
+					
+					//将表单修改为异步表单
+					$('#editUserForm').form({
+					    url: opt=="save"?'saveUser.do':'updateUser.do',
+					    onSubmit: function(){
+							return $('#editUserForm').form('validate');
+					    },
+					    success:function(data){
+							
+					    	var jsonData = $.parseJSON(data);
+					    	
+					    	if(jsonData.code==200){
+					    		
+					    		$('#editUserDialog').dialog('close');
+					    		
+					    		//刷新表格数据
+					    		$('#userList').datagrid('reload');
+					    		
+					    		$.messager.show({
+					    			title:'提示信息',
+					    			msg:jsonData.msg,
+					    			timeout:2000,
+					    			showType:'slide'
+					    		});
+					    		
+					    	}else{
+					    		
+					    		$.messager.alert('警告信息',jsonData.msg,'warning');
+					    	}
+					    }
+					});
+				}
+			},'-',{
+				iconCls: 'icon-edit',
+				text: '修改管理员',
+				handler: function(){
+					
+					opt = "update";
+					
+					//当前选中的行
+					var selectRow = $('#userList').datagrid('getSelections');
+					
+					if(selectRow.length!=1){
+						
+						$.messager.alert('提示信息','请选中一行数据','info');
+						
+					}else{
+						
+						$('#editUserDialog').dialog('open');
+						
+						$('#uname').val(selectRow[0].uName);
+						
+						$('#rId').combobox('setValue',selectRow[0].role.rId);
+						
+						$('#uId').val(selectRow[0].uId);
+						
+						if(selectRow[0].status==1){
+							
+							$('#enable').prop('checked',true);
+						}else{
+							
+							$('#disable').prop('checked',true);
+						}
+						
+						//将表单修改为异步表单
+						$('#editUserForm').form({
+						    url: opt=="save"?'saveUser.do':'updateUser.do',
+						    onSubmit: function(){
+								return $('#editUserForm').form('validate');
+						    },
+						    success:function(data){
+						    	
+						    	console.info(data);
+								
+						    	var jsonData = $.parseJSON(data);
+						    	
+						    	if(jsonData.code==200){
+						    		
+						    		$('#editUserDialog').dialog('close');
+						    		
+						    		//刷新表格数据
+						    		$('#userList').datagrid('reload');
+						    		
+						    		$.messager.show({
+						    			title:'提示信息',
+						    			msg:jsonData.msg,
+						    			timeout:2000,
+						    			showType:'slide'
+						    		});
+						    		
+						    	}else{
+						    		
+						    		$.messager.alert('警告信息',jsonData.msg,'warning');
+						    	}
+						    }
+						});
+						
+					}
+				}
+			},'-',{
+				iconCls: 'icon-lock1',
+				text: '禁用管理员',
+				handler: function(){
+					var selectRow = $('#userList').datagrid('getSelections');
+					
+					if(selectRow.length==0){
+						
+						$.messager.alert('警告信息','至少选中一个用户','warning');
+					}else{
+						
+						var uIds = new Array();
+						
+						for(var i = 0;i<selectRow.length;i++){
+							
+							uIds.push(selectRow[i].uId);
+						}
+						
+						$.post('updateUsersStatus.do',{uIds:uIds,status:0},function(data){
+							
+							$('#userList').datagrid('reload');
+							
+							$.messager.show({
+				    			title:'提示信息',
+				    			msg:data.msg,
+				    			timeout:2000,
+				    			showType:'slide'
+				    		});
+						},'json');
+					}
+					
+				}},'-',{
+					iconCls: 'icon-lock1-open',
+					text: '启用管理员',
+					handler: function(){
+						var selectRow = $('#userList').datagrid('getSelections');
+						
+						if(selectRow.length==0){
+							
+							$.messager.alert('警告信息','至少选中一个用户','warning');//[2,3,4]
+						}else{
+							
+							var uIds = new Array();
+							
+							for(var i = 0;i<selectRow.length;i++){
+								
+								uIds.push(selectRow[i].uId);
+							}
+							
+							$.post('updateUsersStatus.do',{uIds:uIds,status:1},function(data){
+								
+								$('#userList').datagrid('reload');
+								
+								$.messager.show({
+					    			title:'提示信息',
+					    			msg:data.msg,
+					    			timeout:2000,
+					    			showType:'slide'
+					    		});
+							},'json');
+						}
+						
+					}
+			}],
+			
+		    fitColumns: true
+		});
+		
+		//弹出框
+		$('#editUserDialog').dialog({
+		    title: '新增管理员',
+		    width: 600,
+		    height: 400,
+		    closed: true,
+		    modal: true,
+		    buttons:[{
+		    	iconCls: 'icon-save',
+				text:'保存',
+				handler:function(){
+					
+					$('#editUserForm').submit();
+				}
+			},{
+				iconCls: 'icon-cancel',
+				text:'关闭',
+				handler:function(){
+					
+					$('#editUserDialog').dialog('close');
+				}
+			}]
+		});
+		
+		$('#rId').combobox({
+			valueField:'rId',
+			textField:'rName',
+			url:'getRoleList.do'
+		});
+	</script>
+</body>
+</html>
